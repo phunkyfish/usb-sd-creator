@@ -23,7 +23,7 @@
 #
 #-------------------------------------------------
 
-QT += core gui network widgets
+QT += core gui network widgets core5compat
 
 TARGET = LibreELEC.USB-SD.Creator
 TEMPLATE = app

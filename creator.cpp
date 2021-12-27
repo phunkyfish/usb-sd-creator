@@ -21,6 +21,7 @@
 #include "ui_creator.h"
 #include "version.h"
 
+#include <QtCore/qregularexpression.h>
 #include <QDebug>
 #include <QString>
 #include <QFile>
@@ -38,6 +39,7 @@
 #include <QDesktopServices>
 #include <QMimeData>
 #include <QProcess>
+#include <QRegExp>
 #include <QVersionNumber>
 
 #if defined(Q_OS_WIN)

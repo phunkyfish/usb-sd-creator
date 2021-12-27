@@ -25,6 +25,7 @@
 #include <QJsonValue>
 #include <QStandardPaths>
 #include <QCollator>
+#include <QRegExp>
 #include <QVersionNumber>
 #include <algorithm>
 

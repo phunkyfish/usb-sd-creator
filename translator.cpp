@@ -23,6 +23,7 @@
 #include <QFile>
 #include <QDir>
 #include <QCollator>
+#include <QRegExp>
 #include <algorithm>
 
 Translator::Translator(QObject *parent, QSettings *set) :
