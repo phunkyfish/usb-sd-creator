@@ -251,6 +251,7 @@ Creator::~Creator()
     diskWriterThread->wait();
     delete diskWriterThread;
     delete devEnumerator;
+    delete parserData;
 }
 
 void Creator::httpsUrlHandler(const QUrl &url)
@@ -490,11 +491,11 @@ void Creator::parseJsonAndSet(const QByteArray &data)
 
     ui->projectSelectBox->clear();
 
-    QList<JsonData> dataList = parserData->getJsonData();
-    for (int ix = 0; ix < dataList.size(); ix++) {
-        QString projectName = dataList.at(ix).name;
-        QString projectId = dataList.at(ix).id;
-        QString projectUrl = dataList.at(ix).url;
+    QList<ProjectData> projectList = parserData->getProjectData();
+    for (auto& project : projectList) {
+        QString projectName = project.name;
+        QString projectId = project.id;
+        QString projectUrl = project.url;
 
         QVariantMap projectData;
         projectData.insert("id", projectId);
@@ -536,15 +537,17 @@ void Creator::setProjectImages()
 
     ui->imageSelectBox->clear();
 
-    QList<JsonData> dataList = parserData->getJsonData();
-    for (int ix = 0; ix < dataList.size(); ix++) {
-        QString projectName = dataList.at(ix).name;
+    QList<ProjectData> projectList = parserData->getProjectData();
+    for (auto& project : projectList) {
+        QString projectName = project.name;
 
         // show images only for selected project
         if (projectName != ui->projectSelectBox->currentText())
             continue;
 
-        QList<QVariantMap> releases = dataList.at(ix).images;
+        QString lastVersionNum;
+
+        QList<QVariantMap> releases = project.images;
         for (QList<QVariantMap>::const_iterator it = releases.constBegin();
              it != releases.constEnd();
              it++)
@@ -552,6 +555,18 @@ void Creator::setProjectImages()
             QString imageName = (*it)["name"].toString();
             QString imageChecksum = (*it)["sha256"].toString();
             QString imageSize = (*it)["size"].toString();
+
+            QString versionNum;
+            QRegularExpression versionNumRegExp = QRegularExpression("-([0-9]+\\.[0-9]+\\.[0-9]+).*\\.img\\.gz");
+            QRegularExpressionMatch versionNumMatch = versionNumRegExp.match(imageName);
+            if (versionNumMatch.hasMatch())
+                versionNum = versionNumMatch.captured(1);
+
+            // if we don't show all images, break after the version number changes
+            // note that multiple latest image numbers are possible with hardware variations
+            // e.g LibreELEC-A64.arm-9.95.4-orangepi-win.img.gz or LibreELEC-A64.arm-9.95.4-pine64-lts.img.g
+            if (!ui->imagesShowAll->isChecked() && !lastVersionNum.isEmpty() && lastVersionNum != versionNum)
+                break;
 
             int size = imageSize.toInt();
             if (size < 1024) {
@@ -564,7 +579,8 @@ void Creator::setProjectImages()
                 imageSize = QString::number(size) + " MB";
             }
 
-            //  LibreELEC-RPi2.arm-7.90.002.img.gz
+            // LibreELEC-RPi2.arm-7.90.002.img.gz
+            // LibreELEC-TinkerBoard.arm-8.90.015-rk3288.img.gz
             QRegularExpression regExp = QRegularExpression(".+-[0-9]+\\.(9[05])\\.[0-9]+.*\\.img\\.gz");
             QRegularExpressionMatch match = regExp.match(imageName);
             QStringList regExpVal = match.capturedTexts();
@@ -588,11 +604,7 @@ void Creator::setProjectImages()
             ui->imageSelectBox->insertItem(0, imageName + ", " + imageSize, imageName);
             ui->imageSelectBox->setItemData(0, alphaBetaNumber + " " + releasesUrl + imageName, Qt::ToolTipRole);
 
-            // if we don't show all images we are already done
-            // we are adding items in reverse order
-            // image with highest number already added
-            if (! ui->imagesShowAll->isChecked())
-                break;
+            lastVersionNum = versionNum;
         }
     }
 
